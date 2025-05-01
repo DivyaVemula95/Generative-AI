@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agriculture Service Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        .chat-body {
+            padding: 20px;
+            height: 500px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px 15px;
+            border-radius: 18px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+        .bot-message {
+            background-color: #f1f1f1;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+        .chat-input {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            background-color: #f9f9f9;
+        }
+        .language-selector {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h2>🌱 Agriculture Service Assistant</h2>
+            </div>
+            <div class="chat-body" id="chatBody">
+                <div class="message bot-message">
+                    Hello! I'm your Agriculture Service Assistant. How can I help you today?
+                </div>
+            </div>
+            <div class="chat-input">
+                <div class="language-selector">
+                    <select class="form-select" id="languageSelect">
+                        <option value="auto">Auto-detect</option>
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="hi">Hindi</option>
+                        <option value="bn">Bengali</option>
+                        <option value="ta">Tamil</option>
+                        <option value="te">Telugu</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="userInput" placeholder="Ask about services, providers, or orders...">
+                    <button class="btn btn-success" id="sendButton">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#userInput').keypress(function(e) {
+                if (e.which === 13) {
+                    sendMessage();
+                }
+            });
+
+            $('#sendButton').click(sendMessage);
+
+            function sendMessage() {
+                const userInput = $('#userInput').val().trim();
+                const language = $('#languageSelect').val();
+
+                if (userInput) {
+                    // Add user message to chat
+                    $('#chatBody').append(
+                        `<div class="message user-message">
+                            <strong>You:</strong> ${userInput}
+                        </div>`
+                    );
+
+                    $('#userInput').val('');
+                    scrollToBottom();
+
+                    // Show typing indicator
+                    $('#chatBody').append(
+                        `<div class="message bot-message" id="typingIndicator">
+                            <em>Assistant is typing...</em>
+                        </div>`
+                    );
+                    scrollToBottom();
+
+                    // Send to backend
+                    $.ajax({
+                        url: '/ask',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            question: userInput,
+                            language: language
+                        }),
+                        success: function(response) {
+                            $('#typingIndicator').remove();
+
+                            if (response.success) {
+                                $('#chatBody').append(
+                                    `<div class="message bot-message">
+                                        <strong>Assistant:</strong> ${response.response.replace(/\n/g, '<br>')}
+                                    </div>`
+                                );
+                            } else {
+                                $('#chatBody').append(
+                                    `<div class="message bot-message text-danger">
+                                        <strong>Error:</strong> ${response.error}
+                                    </div>`
+                                );
+                            }
+                            scrollToBottom();
+                        },
+                        error: function(xhr) {
+                            $('#typingIndicator').remove();
+                            $('#chatBody').append(
+                                `<div class="message bot-message text-danger">
+                                    <strong>Error:</strong> Failed to get response from server
+                                </div>`
+                            );
+                            scrollToBottom();
+                        }
+                    });
+                }
+            }
+
+            function scrollToBottom() {
+                const chatBody = document.getElementById('chatBody');
+                chatBody.scrollTop = chatBody.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html>
